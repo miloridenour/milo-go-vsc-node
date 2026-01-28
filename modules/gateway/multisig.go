@@ -402,7 +402,7 @@ func (ms *MultiSig) executeActions(bh uint64) (signingPackage, error) {
 				ms.sconf.GatewayWallet(),
 				to,
 				hive.AmountToString(amt),
-				strings.ToUpper(action.Asset),
+				ms.toHiveAssetName(action.Asset),
 				action.Memo,
 			)
 
@@ -429,7 +429,7 @@ func (ms *MultiSig) executeActions(bh uint64) (signingPackage, error) {
 			ms.sconf.GatewayWallet(),
 			ms.sconf.GatewayWallet(),
 			amtStr,
-			"HBD",
+			ms.toHiveAssetName("hbd"),
 			"Staking "+amtStr+" HBD from "+strconv.Itoa(stakeTxCount)+" transactions",
 		)
 
@@ -440,7 +440,7 @@ func (ms *MultiSig) executeActions(bh uint64) (signingPackage, error) {
 
 		amtStr := hive.AmountToString(mustUnstakeBal)
 
-		op := ms.hiveCreator.TransferFromSavings(ms.sconf.GatewayWallet(), ms.sconf.GatewayWallet(), amtStr, "HBD", "Unstaking "+amtStr+" HBD from "+strconv.Itoa(unstakeTxCount)+" transactions", int(bh))
+		op := ms.hiveCreator.TransferFromSavings(ms.sconf.GatewayWallet(), ms.sconf.GatewayWallet(), amtStr, ms.toHiveAssetName("hbd"), "Unstaking "+amtStr+" HBD from "+strconv.Itoa(unstakeTxCount)+" transactions", int(bh))
 
 		ops = append(ops, op)
 	}
@@ -583,13 +583,13 @@ func (ms *MultiSig) syncBalance(bh uint64) (signingPackage, error) {
 			ms.sconf.GatewayWallet(),
 			ms.sconf.GatewayWallet(),
 			hive.AmountToString(hbdToStake),
-			"HBD",
+			ms.toHiveAssetName("hbd"),
 			"Staking "+hive.AmountToString(hbdToStake)+" HBD",
 		)
 
 		ops = append(ops, op)
 	} else if (hbdToUnstake > 10_000 || stakedBal < 10_000) && hbdToUnstake != 0 {
-		op := ms.hiveCreator.TransferFromSavings(ms.sconf.GatewayWallet(), ms.sconf.GatewayWallet(), hive.AmountToString(hbdToUnstake), "HBD", "Unstaking "+hive.AmountToString(hbdToUnstake)+" HBD", int(bh+1))
+		op := ms.hiveCreator.TransferFromSavings(ms.sconf.GatewayWallet(), ms.sconf.GatewayWallet(), hive.AmountToString(hbdToUnstake), ms.toHiveAssetName("hbd"), "Unstaking "+hive.AmountToString(hbdToUnstake)+" HBD", int(bh+1))
 
 		ops = append(ops, op)
 	}
@@ -773,6 +773,22 @@ func (ms *MultiSig) getSigningKp() *hivego.KeyPair {
 
 	kp := hivego.KeyPairFromBytes(gatewayKey[:])
 	return kp
+}
+
+func (ms *MultiSig) toHiveAssetName(asset string) string {
+	// TODO: transition to NAI format instead of strings
+	if ms.sconf.OnTestnet() {
+		switch asset {
+		case "hive":
+			return "TESTS"
+		case "hbd":
+			return "TBD"
+		default:
+			return ""
+		}
+	} else {
+		return strings.ToUpper(asset)
+	}
 }
 
 var _ a.Plugin = &MultiSig{}
