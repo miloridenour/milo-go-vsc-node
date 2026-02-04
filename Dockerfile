@@ -56,4 +56,5 @@ exec "$@"\n' > /home/app/app/entrypoint.sh && \
 chmod +x /home/app/app/entrypoint.sh
 
 # Command to run when the container starts
-ENTRYPOINT ["/home/app/app/entrypoint.sh", "./vsc-node"]
+ENTRYPOINT ["/home/app/app/entrypoint.sh"]
+CMD ["./vsc-node"]
