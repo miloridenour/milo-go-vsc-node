@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"math/big"
 	"slices"
 	"sort"
@@ -398,7 +399,15 @@ func (ms *MultiSig) executeActions(bh uint64) (signingPackage, error) {
 			}
 			amt := action.Amount
 
-			op := ms.hiveCreator.Transfer(ms.sconf.GatewayWallet(), to, hive.AmountToString(amt), ms.toHiveAssetName(action.Asset), "Withdrawal from vsc.network")
+			log.Printf("[gateway] received withdrawl action with memo: %s", action.Memo)
+
+			op := ms.hiveCreator.Transfer(
+				ms.sconf.GatewayWallet(),
+				to,
+				hive.AmountToString(amt),
+				ms.toHiveAssetName(action.Asset),
+				"Withdrawal from vsc.network",
+			)
 
 			ops = append(ops, op)
 		}
@@ -419,7 +428,13 @@ func (ms *MultiSig) executeActions(bh uint64) (signingPackage, error) {
 
 		amtStr := hive.AmountToString(mustStakeBal)
 
-		op := ms.hiveCreator.TransferToSavings(ms.sconf.GatewayWallet(), ms.sconf.GatewayWallet(), amtStr, ms.toHiveAssetName("hbd"), "Staking "+amtStr+" HBD from "+strconv.Itoa(stakeTxCount)+" transactions")
+		op := ms.hiveCreator.TransferToSavings(
+			ms.sconf.GatewayWallet(),
+			ms.sconf.GatewayWallet(),
+			amtStr,
+			ms.toHiveAssetName("hbd"),
+			"Staking "+amtStr+" HBD from "+strconv.Itoa(stakeTxCount)+" transactions",
+		)
 
 		ops = append(ops, op)
 	} else if unstakeBal > stakeBal {
@@ -567,7 +582,13 @@ func (ms *MultiSig) syncBalance(bh uint64) (signingPackage, error) {
 	//Adjust minimums as necessary
 	var ops []hivego.HiveOperation
 	if (hbdToStake > 100_000 || stakedBal < 150_000) && hbdToStake != 0 {
-		op := ms.hiveCreator.TransferToSavings(ms.sconf.GatewayWallet(), ms.sconf.GatewayWallet(), hive.AmountToString(hbdToStake), ms.toHiveAssetName("hbd"), "Staking "+hive.AmountToString(hbdToStake)+" HBD")
+		op := ms.hiveCreator.TransferToSavings(
+			ms.sconf.GatewayWallet(),
+			ms.sconf.GatewayWallet(),
+			hive.AmountToString(hbdToStake),
+			ms.toHiveAssetName("hbd"),
+			"Staking "+hive.AmountToString(hbdToStake)+" HBD",
+		)
 
 		ops = append(ops, op)
 	} else if (hbdToUnstake > 10_000 || stakedBal < 10_000) && hbdToUnstake != 0 {
@@ -584,7 +605,12 @@ func (ms *MultiSig) syncBalance(bh uint64) (signingPackage, error) {
 
 		headerBytes, _ := json.Marshal(header)
 
-		headerOp := ms.hiveCreator.CustomJson([]string{ms.sconf.GatewayWallet()}, []string{}, "vsc.fr_sync", string(headerBytes))
+		headerOp := ms.hiveCreator.CustomJson(
+			[]string{ms.sconf.GatewayWallet()},
+			[]string{},
+			"vsc.fr_sync",
+			string(headerBytes),
+		)
 
 		ops = append([]hivego.HiveOperation{headerOp}, ops...)
 
@@ -631,7 +657,11 @@ func (ms *MultiSig) getThreshold() (int, []string, []int, error) {
 	return gatewayAccount.Owner.WeightThreshold, publicKeys, weights, nil
 }
 
-func (ms *MultiSig) waitForSigs(ctx context.Context, tx hivego.HiveTransaction, hivetxId string) ([]string, uint64, error) {
+func (ms *MultiSig) waitForSigs(
+	ctx context.Context,
+	tx hivego.HiveTransaction,
+	hivetxId string,
+) ([]string, uint64, error) {
 	threshold, publicList, weights, _ := ms.getThreshold()
 	txId, err := tx.GenerateTrxId()
 	if err != nil {
@@ -766,7 +796,20 @@ func (ms *MultiSig) toHiveAssetName(asset string) string {
 
 var _ a.Plugin = &MultiSig{}
 
-func New(logger logger.Logger, sconf systemconfig.SystemConfig, witnessDb witnesses.Witnesses, electionDb elections.Elections, ledgerActions ledgerDb.BridgeActions, balanceDb ledgerDb.Balances, hiveCreator hive.HiveTransactionCreator, hiveConsumer *blockconsumer.HiveConsumer, p2p *libp2p.P2PServer, se *stateEngine.StateEngine, identityConfig common.IdentityConfig, hiveClient *hivego.HiveRpcNode) *MultiSig {
+func New(
+	logger logger.Logger,
+	sconf systemconfig.SystemConfig,
+	witnessDb witnesses.Witnesses,
+	electionDb elections.Elections,
+	ledgerActions ledgerDb.BridgeActions,
+	balanceDb ledgerDb.Balances,
+	hiveCreator hive.HiveTransactionCreator,
+	hiveConsumer *blockconsumer.HiveConsumer,
+	p2p *libp2p.P2PServer,
+	se *stateEngine.StateEngine,
+	identityConfig common.IdentityConfig,
+	hiveClient *hivego.HiveRpcNode,
+) *MultiSig {
 	return &MultiSig{
 		witnessDb:     witnessDb,
 		electionDb:    electionDb,
