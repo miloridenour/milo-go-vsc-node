@@ -46,6 +46,7 @@ func (s p2pSpec) HandleMessage(
 	msg p2pMessage,
 	send libp2p.SendFunc[p2pMessage],
 ) error {
+	s.ms.log.Debug("[gateway] received p2p message: %v", msg)
 	if msg.Type == "sign_request" {
 		if s.ms.bh == 0 {
 			return nil

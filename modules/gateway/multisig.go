@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"math/big"
 	"slices"
 	"sort"
@@ -399,7 +398,7 @@ func (ms *MultiSig) executeActions(bh uint64) (signingPackage, error) {
 			}
 			amt := action.Amount
 
-			log.Printf("[gateway] received withdrawl action with memo: %s", action.Memo)
+			ms.log.Debug("[gateway] received withdrawal action with memo: %s", action.Memo)
 
 			op := ms.hiveCreator.Transfer(
 				ms.sconf.GatewayWallet(),
