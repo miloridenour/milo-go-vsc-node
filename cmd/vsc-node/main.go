@@ -59,11 +59,11 @@ func main() {
 	hiveApiUrl := streamer.NewHiveConfig(args.dataDir)
 	hiveApiUrlErr := hiveApiUrl.Init()
 
-	hiveURI := hiveApiUrl.Get().HiveURI
+	hiveURIs := hiveApiUrl.Get().HiveURIs
 
 	fmt.Println("Network:", args.network)
 	fmt.Println("MONGO_URL", os.Getenv("MONGO_URL"))
-	fmt.Println("HIVE_API", hiveURI)
+	fmt.Println("HIVE_APIs", hiveURIs)
 	fmt.Println("Git Commit", announcements.GitCommit)
 
 	dbImpl := db.New(dbConf)
@@ -109,7 +109,13 @@ func main() {
 	}
 
 	stBlock := sysConfig.StartHeight()
-	streamerPlugin := streamer.NewStreamer(hiveRpcClient, hiveBlocks, filters, vFilters, &stBlock) // optional starting block #
+	streamerPlugin := streamer.NewStreamer(
+		hiveRpcClient,
+		hiveBlocks,
+		filters,
+		vFilters,
+		&stBlock,
+	) // optional starting block #
 
 	identityConfig := common.NewIdentityConfig(args.dataDir)
 
