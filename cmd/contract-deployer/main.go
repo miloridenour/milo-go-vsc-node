@@ -90,12 +90,18 @@ func main() {
 	}
 }
 
-func deployNewContract(sysConfig systemconfig.SystemConfig, identityConfig common.IdentityConfig, hiveConfig streamer.HiveConfig, proof *stateEngine.StorageProof, args args) {
+func deployNewContract(
+	sysConfig systemconfig.SystemConfig,
+	identityConfig common.IdentityConfig,
+	hiveConfig streamer.HiveConfig,
+	proof *stateEngine.StorageProof,
+	args args,
+) {
 	user := identityConfig.Get().HiveUsername
 	wif := identityConfig.Get().HiveActiveKey
 
 	if len(user) > 0 && len(wif) > 0 {
-		hiveClient := hivego.NewHiveRpc([]string{hiveConfig.Get().HiveURI})
+		hiveClient := hivego.NewHiveRpc(hiveConfig.Get().HiveURIs)
 		hiveClient.ChainID = sysConfig.HiveChainId()
 
 		tx := stateEngine.TxCreateContract{
@@ -116,10 +122,10 @@ func deployNewContract(sysConfig systemconfig.SystemConfig, identityConfig commo
 		}
 		fmt.Println(string(j))
 
-		currency := "HBD"
-		if sysConfig.OnTestnet() {
-			currency = "TBD"
-		}
+		// currency := "HBD"
+		// if sysConfig.OnTestnet() {
+		// 	currency = "TBD"
+		// }
 
 		deployOp := hivego.CustomJsonOperation{
 			RequiredAuths:        []string{user},
@@ -127,16 +133,15 @@ func deployNewContract(sysConfig systemconfig.SystemConfig, identityConfig commo
 			Id:                   "vsc.create_contract",
 			Json:                 string(j),
 		}
-		feeOp := hivego.TransferOperation{
-			From:   user,
-			To:     sysConfig.GatewayWallet(),
-			Amount: "10.000 " + currency,
-			Memo:   "",
-		}
+		// feeOp := hivego.TransferOperation{
+		// 	From:   user,
+		// 	To:     sysConfig.GatewayWallet(),
+		// 	Amount: "10.000 " + currency,
+		// 	Memo:   "",
+		// }
 
 		txid, err := hiveClient.Broadcast([]hivego.HiveOperation{
 			deployOp,
-			feeOp,
 		}, &wif)
 		if err != nil {
 			fmt.Println("failed to broadcast contract creation tx", err)
@@ -149,12 +154,18 @@ func deployNewContract(sysConfig systemconfig.SystemConfig, identityConfig commo
 	}
 }
 
-func updateContract(sysConfig systemconfig.SystemConfig, identityConfig common.IdentityConfig, hiveConfig streamer.HiveConfig, proof *stateEngine.StorageProof, args args) {
+func updateContract(
+	sysConfig systemconfig.SystemConfig,
+	identityConfig common.IdentityConfig,
+	hiveConfig streamer.HiveConfig,
+	proof *stateEngine.StorageProof,
+	args args,
+) {
 	user := identityConfig.Get().HiveUsername
 	wif := identityConfig.Get().HiveActiveKey
 
 	if len(user) > 0 && len(wif) > 0 {
-		hiveClient := hivego.NewHiveRpc([]string{hiveConfig.Get().HiveURI})
+		hiveClient := hivego.NewHiveRpc(hiveConfig.Get().HiveURIs)
 		hiveClient.ChainID = sysConfig.HiveChainId()
 
 		tx := stateEngine.TxUpdateContract{

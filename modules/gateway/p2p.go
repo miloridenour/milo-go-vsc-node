@@ -40,7 +40,12 @@ func (p2pSpec) ValidateMessage(ctx context.Context, from peer.ID, msg *pubsub.Me
 	return true
 }
 
-func (s p2pSpec) HandleMessage(ctx context.Context, from peer.ID, msg p2pMessage, send libp2p.SendFunc[p2pMessage]) error {
+func (s p2pSpec) HandleMessage(
+	ctx context.Context,
+	from peer.ID,
+	msg p2pMessage,
+	send libp2p.SendFunc[p2pMessage],
+) error {
 	if msg.Type == "sign_request" {
 		if s.ms.bh == 0 {
 			return nil
@@ -105,6 +110,7 @@ func (s p2pSpec) HandleMessage(ctx context.Context, from peer.ID, msg p2pMessage
 			signPkg, err := s.ms.executeActions(signReq.BlockHeight)
 
 			fmt.Println("executeActions signPkg", signPkg)
+			fmt.Println("executeActions err", err)
 
 			if err != nil {
 				return nil
@@ -113,10 +119,12 @@ func (s p2pSpec) HandleMessage(ctx context.Context, from peer.ID, msg p2pMessage
 			if signPkg.TxId == signReq.TxId {
 				kp := s.ms.getSigningKp()
 				if kp == nil {
+					fmt.Println("error getting signing kp")
 					return nil
 				}
 				sig, err := signPkg.Tx.Sign(*kp, s.ms.hiveClient.ChainID)
 				if err != nil {
+					fmt.Println("error in Sign()")
 					return nil
 				}
 
