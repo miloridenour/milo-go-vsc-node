@@ -110,7 +110,6 @@ func (s p2pSpec) HandleMessage(
 			signPkg, err := s.ms.executeActions(signReq.BlockHeight)
 
 			fmt.Println("executeActions signPkg", signPkg)
-			fmt.Println("executeActions err", err)
 
 			if err != nil {
 				return nil
@@ -119,12 +118,10 @@ func (s p2pSpec) HandleMessage(
 			if signPkg.TxId == signReq.TxId {
 				kp := s.ms.getSigningKp()
 				if kp == nil {
-					fmt.Println("error getting signing kp")
 					return nil
 				}
 				sig, err := signPkg.Tx.Sign(*kp, s.ms.hiveClient.ChainID)
 				if err != nil {
-					fmt.Println("error in Sign()")
 					return nil
 				}
 
@@ -134,6 +131,8 @@ func (s p2pSpec) HandleMessage(
 				}
 
 				data, _ := json.Marshal(resp)
+
+				fmt.Println("responding:", string(data))
 
 				send(p2pMessage{
 					Type:    "sign_response",
