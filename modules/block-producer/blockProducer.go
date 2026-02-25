@@ -730,9 +730,14 @@ func (bp *BlockProducer) MakeOutputs(session *datalayer.Session) []vscBlocks.Vsc
 			db.Delete(key)
 		}
 
-		fmt.Println(output.Cache)
+		fmt.Println("[output cache]", output.Cache)
 		for key, value := range output.Cache {
-			fmt.Printf("key: '%s', value string: '%s', hex: '%s'", key, string(value), hex.EncodeToString(value))
+			fmt.Printf(
+				"[output cache] key: '%s', value string: '%s', hex: '%s'",
+				key,
+				string(value),
+				hex.EncodeToString(value),
+			)
 			if output.Deletions[key] {
 				continue
 			}
