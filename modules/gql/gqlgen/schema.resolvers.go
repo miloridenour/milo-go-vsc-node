@@ -200,6 +200,7 @@ func (r *postingJsonKeysResolver) T(ctx context.Context, obj *witnesses.PostingJ
 
 // GetStateByKeys is the resolver for the getStateByKeys field.
 func (r *queryResolver) GetStateByKeys(ctx context.Context, contractID string, keys []string) (model.Map, error) {
+	fmt.Println("received GetStateByKeys query for contract:", contractID, " keys:", keys)
 	if len(keys) < 1 || len(keys) > 100 {
 		return nil, fmt.Errorf("number of state keys to query must be between 1 and 100")
 	}

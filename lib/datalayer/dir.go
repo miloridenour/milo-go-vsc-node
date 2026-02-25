@@ -120,10 +120,18 @@ func (db *DataBin) List(prefix string) (*[]string, error) {
 }
 
 func (db *DataBin) Set(path string, link cid.Cid) error {
+	fmt.Printf("[datalayer.Set] path: '%s' (len=%d)", path, len(path))
+	// Print hex dump to see any hidden characters
+	fmt.Printf(" [HEX: %x]\n", []byte(path))
+
 	node, _ := db.DataLayer.DagServ.Get(context.Background(), link)
 
 	var wrkDir uio.Directory
 	splitPath := strings.Split(path, "/")
+	fmt.Println("[datalayer.Set] split path:", splitPath)
+	for i, seg := range splitPath {
+		fmt.Printf("[datalayer.Set]   segment[%d]: '%s' (len=%d) [HEX: %x]\n", i, seg, len(seg), []byte(seg))
+	}
 
 	var leaf *LeafDir
 	if len(splitPath) > 1 {
@@ -150,12 +158,10 @@ func (db *DataBin) Set(path string, link cid.Cid) error {
 		wrkDir = leaf.Dir
 	}
 
-	err := wrkDir.AddChild(context.Background(), splitPath[len(splitPath)-1], node)
+	finalKey := splitPath[len(splitPath)-1]
+	fmt.Printf("[datalayer.Set] adding child: '%s' (len=%d) [HEX: %x]\n", finalKey, len(finalKey), []byte(finalKey))
+	err := wrkDir.AddChild(context.Background(), finalKey, node)
 
-	// dag, _ := dagCbor.Decode(nodeDir.RawData(), mh.SHA2_256, -1)
-	// json := dag.RawData()
-
-	// fmt.Println("Json", json)
 	return err
 }
 
