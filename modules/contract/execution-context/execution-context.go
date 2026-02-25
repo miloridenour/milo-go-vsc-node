@@ -398,6 +398,7 @@ func (ctx *contractExecutionContext) PullBalance(from string, amount int64, asse
 			errors.Join(fmt.Errorf(contracts.MISSING_REQ_AUTH), fmt.Errorf("no active authority")),
 		)
 	}
+	fmt.Println("pulling balance from:", from)
 	switch from {
 	case ctx.env.Caller, "":
 		tokenLimit, ok := ctx.tokenLimits[asset]
