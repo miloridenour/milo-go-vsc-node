@@ -723,6 +723,7 @@ func (bp *BlockProducer) MakeOutputs(session *datalayer.Session) []vscBlocks.Vsc
 			db = datalayer.NewDataBin(bp.Datalayer)
 		} else {
 			cidz := cid.MustParse(output.Cid)
+			fmt.Printf("[MakeOutputs] Loading previous state for contract %s from CID: %s\n", contractId, output.Cid)
 			db = datalayer.NewDataBinFromCid(bp.Datalayer, cidz)
 		}
 
@@ -730,14 +731,9 @@ func (bp *BlockProducer) MakeOutputs(session *datalayer.Session) []vscBlocks.Vsc
 			db.Delete(key)
 		}
 
-		fmt.Println("[output cache]", output.Cache)
+		fmt.Printf("[MakeOutputs] Setting %d new keys in cache\n", len(output.Cache))
 		for key, value := range output.Cache {
-			fmt.Printf(
-				"[output cache] key: '%s', value string: '%s', hex: '%s'",
-				key,
-				string(value),
-				hex.EncodeToString(value),
-			)
+			fmt.Printf("[MakeOutputs] Setting %d new keys in cache\n", len(output.Cache))
 			if output.Deletions[key] {
 				continue
 			}
@@ -755,7 +751,9 @@ func (bp *BlockProducer) MakeOutputs(session *datalayer.Session) []vscBlocks.Vsc
 
 			db.Set(key, cidz)
 		}
+		fmt.Printf("[MakeOutputs] Saving DataBin...\n")
 		savedCid := db.Save()
+		fmt.Printf("[MakeOutputs] Saved with new CID: %s (previous was: %s)\n", savedCid.String(), output.Cid)
 
 		if len(bp.StateEngine.ContractResults[contractId]) == 0 {
 			continue
