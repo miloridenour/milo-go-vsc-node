@@ -201,18 +201,18 @@ func (db *DataBin) Get(path string) (*cid.Cid, error) {
 
 	fmt.Println("[datalayer] work directory has", len(links), "entries")
 	for _, link := range links {
-		fmt.Println("[datalayer]   - '", link.Name, "' codec:", link.Cid.Prefix().Codec)
+		fmt.Printf("[datalayer]   - '%s' codec: %d\n", link.Name, link.Cid.Prefix().Codec)
 	}
 
 	// Find the matching link by name
 	for _, link := range links {
 		if link.Name == endPath {
-			fmt.Println("[datalayer] found link for", endPath, "with CID:", link.Cid)
+			fmt.Printf("[datalayer] found link for '%s' with CID: %s\n", endPath, link.Cid)
 			return &link.Cid, nil
 		}
 	}
 
-	fmt.Println("[datalayer] link not found for path:", endPath)
+	fmt.Printf("[datalayer] link '%s' not found in directory\n", endPath)
 	return nil, os.ErrNotExist
 }
 
@@ -268,7 +268,7 @@ func (db *DataBin) resolveWrkDir(path string) (*LeafDir, error) {
 			continue
 		}
 
-		fmt.Println("[datalayer] resolving segment", i+1, ":", pathElement)
+		fmt.Printf("[datalayer] resolving segment %d: '%s'\n", i+1, pathElement)
 
 		// First try the in-memory leaves map
 		if lf.leaves[pathElement] != nil {
