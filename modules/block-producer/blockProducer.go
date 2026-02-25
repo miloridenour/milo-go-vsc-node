@@ -733,7 +733,7 @@ func (bp *BlockProducer) MakeOutputs(session *datalayer.Session) []vscBlocks.Vsc
 
 		fmt.Printf("[MakeOutputs] Setting %d new keys in cache\n", len(output.Cache))
 		for key, value := range output.Cache {
-			fmt.Printf("[MakeOutputs] Setting %d new keys in cache\n", len(output.Cache))
+			fmt.Printf("[MakeOutputs]   Setting key: '%s'\n", key)
 			if output.Deletions[key] {
 				continue
 			}
