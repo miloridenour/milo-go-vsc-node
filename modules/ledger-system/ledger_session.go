@@ -3,6 +3,7 @@ package ledgerSystem
 import (
 	"fmt"
 	"regexp"
+	"runtime/debug"
 	"slices"
 	"strconv"
 	"strings"
@@ -287,6 +288,8 @@ func (ledgerSession *ledgerSession) ExecuteTransfer(opLogEvent OpLogEvent, optio
 	// le.Ls.log.Debug("ledgerSession.StartHeight", ledgerSession.StartHeight, "OpLogEvent.BlockHeight", opLogEvent.BlockHeight)
 
 	fmt.Println("Ledger.Status", opLogEvent.From, fromBal, opLogEvent.Amount)
+	fmt.Println("call stack:")
+	debug.PrintStack()
 	if (fromBal - exclusion) < opLogEvent.Amount {
 		return LedgerResult{
 			Ok:  false,
