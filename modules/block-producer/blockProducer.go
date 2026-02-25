@@ -123,7 +123,10 @@ type generateBlockParams struct {
 
 // This function should generate a deterministically generated block
 // In the future we should apply protocol versioning to this
-func (bp *BlockProducer) GenerateBlock(slotHeight uint64, options ...generateBlockParams) (*vscBlocks.VscHeader, []string, error) {
+func (bp *BlockProducer) GenerateBlock(
+	slotHeight uint64,
+	options ...generateBlockParams,
+) (*vscBlocks.VscHeader, []string, error) {
 	prevBlock, err := bp.VscBlocks.GetBlockByHeight(slotHeight)
 	daSession := datalayer.NewSession(bp.Datalayer)
 
@@ -417,7 +420,11 @@ func (bp *BlockProducer) ProduceBlock(bh uint64) {
 	// fmt.Println("CircuitMap", circuit.CircuitMap())
 
 	if !(signedWeight > (electionResult.TotalWeight * 2 / 3)) {
-		fmt.Println("[bp] not enough signatures", "signedW="+strconv.Itoa(int(signedWeight)), "totalW="+strconv.Itoa(int(electionResult.TotalWeight*2/3)))
+		fmt.Println(
+			"[bp] not enough signatures",
+			"signedW="+strconv.Itoa(int(signedWeight)),
+			"totalW="+strconv.Itoa(int(electionResult.TotalWeight*2/3)),
+		)
 		return
 	}
 
@@ -442,7 +449,12 @@ func (bp *BlockProducer) ProduceBlock(bh uint64) {
 	}
 	bbytes, _ := json.Marshal(blockHeader)
 
-	op := bp.HiveCreator.CustomJson([]string{bp.config.Config.Get().HiveUsername}, []string{}, "vsc.produce_block", string(bbytes))
+	op := bp.HiveCreator.CustomJson(
+		[]string{bp.config.Config.Get().HiveUsername},
+		[]string{},
+		"vsc.produce_block",
+		string(bbytes),
+	)
 
 	tx := bp.HiveCreator.MakeTransaction([]hivego.HiveOperation{op})
 
@@ -718,7 +730,9 @@ func (bp *BlockProducer) MakeOutputs(session *datalayer.Session) []vscBlocks.Vsc
 			db.Delete(key)
 		}
 
+		fmt.Println(output.Cache)
 		for key, value := range output.Cache {
+			fmt.Printf("key: '%s', value string: '%s', hex: '%s'", key, string(value), hex.EncodeToString(value))
 			if output.Deletions[key] {
 				continue
 			}
@@ -871,7 +885,21 @@ func (bp *BlockProducer) Stop() error {
 	return bp.stopP2P()
 }
 
-func New(logger logger.Logger, p2p *libp2p.P2PServer, hiveConsumer *blockconsumer.HiveConsumer, se *stateEngine.StateEngine, conf common.IdentityConfig, sconf systemconfig.SystemConfig, hiveCreator hive.HiveTransactionCreator, da *datalayer.DataLayer, electionsDb elections.Elections, vscBlocks vscBlocks.VscBlocks, txDb transactions.Transactions, rcSystem *rcSystem.RcSystem, nonceDb nonces.Nonces) *BlockProducer {
+func New(
+	logger logger.Logger,
+	p2p *libp2p.P2PServer,
+	hiveConsumer *blockconsumer.HiveConsumer,
+	se *stateEngine.StateEngine,
+	conf common.IdentityConfig,
+	sconf systemconfig.SystemConfig,
+	hiveCreator hive.HiveTransactionCreator,
+	da *datalayer.DataLayer,
+	electionsDb elections.Elections,
+	vscBlocks vscBlocks.VscBlocks,
+	txDb transactions.Transactions,
+	rcSystem *rcSystem.RcSystem,
+	nonceDb nonces.Nonces,
+) *BlockProducer {
 	return &BlockProducer{
 		log:          logger,
 		sigChannels:  make(map[uint64]chan sigMsg),
