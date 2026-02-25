@@ -2,7 +2,7 @@ package datalayer
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"os"
 	"sort"
 	"strings"
@@ -160,32 +160,54 @@ func (db *DataBin) Set(path string, link cid.Cid) error {
 }
 
 func (db *DataBin) Get(path string) (*cid.Cid, error) {
+	fmt.Println("[datalayer] getting cid for path:", path)
 	splitPath := strings.Split(path, "/")
 
-	wrkDir, err := db.resolveWrkDir(strings.Join(splitPath[:len(splitPath)-1], "/"))
+	dirPath := ""
+	if len(splitPath) > 1 {
+		dirPath = strings.Join(splitPath[:len(splitPath)-1], "/")
+	}
+
+	fmt.Println("[datalayer] resolving dir path:", dirPath)
+	wrkDir, err := db.resolveWrkDir(dirPath)
 	if err != nil {
+		fmt.Println("[datalayer] error resolving work dir:", err)
 		return nil, os.ErrNotExist
 	}
+	fmt.Println("[datalayer] workdir resolved successfully")
 
 	endPath := splitPath[len(splitPath)-1]
+	fmt.Println("[datalayer] looking for end path:", endPath)
 
 	if wrkDir.leaves[endPath] != nil {
-		//Do NOT allow directories to return CID
-		//Breaks compaction logic and exposes mutable CID. Not valid K/V either.
+		fmt.Println("[datalayer] found in leaves map (is directory, rejecting)")
 		return nil, os.ErrNotExist
 	}
 
-	node, err := wrkDir.Dir.Find(context.Background(), endPath)
-
-	// listo, _ := wrkDir.Dir.Links(context.Background())
-
+	// Instead of using Find() which tries to fetch the block,
+	// get the link directly from the directory listing
+	fmt.Println("[datalayer] getting links in directory...")
+	links, err := wrkDir.Dir.Links(context.Background())
 	if err != nil {
-
+		fmt.Println("[datalayer] error getting links:", err)
 		return nil, err
-	} else {
-		cid := node.Cid()
-		return &cid, nil
 	}
+
+	fmt.Println("[datalayer] work directory has", len(links), "entries")
+	for _, link := range links {
+		fmt.Println("[datalayer]   - '", link.Name, "' codec:", link.Cid.Prefix().Codec)
+	}
+
+	// Find the matching link by name
+	for _, link := range links {
+		if link.Name == endPath {
+			fmt.Println("[datalayer] found link for", endPath, "with CID:", link.Cid)
+			return &link.Cid, nil
+		}
+	}
+
+	fmt.Println("[datalayer] link not found for path:", endPath)
+	return nil, os.ErrNotExist
 }
 
 func (db *DataBin) Delete(path string) (bool, error) {
@@ -223,20 +245,56 @@ func (db *DataBin) Delete(path string) (bool, error) {
 // Errors out if path does not exist or path is a file
 // Must be exact path to directory
 func (db *DataBin) resolveWrkDir(path string) (*LeafDir, error) {
+	fmt.Println("[datalayer] resolveWrkDir called with path:", path)
+
+	if path == "" {
+		fmt.Println("[datalayer] empty path, returning root leaf")
+		return &db.Leaf, nil
+	}
+
 	splitPaths := strings.Split(path, "/")
+	fmt.Println("[datalayer] split into segments:", splitPaths)
 
 	lf := &db.Leaf
-	for _, path := range splitPaths {
-		if path == "" {
-			break
+	for i, pathElement := range splitPaths {
+		if pathElement == "" {
+			fmt.Println("[datalayer] skipping empty segment at index", i)
+			continue
 		}
-		if lf.leaves[path] != nil {
-			lf = lf.leaves[path]
-		} else {
-			return nil, errors.New("path does not exist")
+
+		fmt.Println("[datalayer] resolving segment", i+1, ":", pathElement)
+
+		// First try the in-memory leaves map
+		if lf.leaves[pathElement] != nil {
+			fmt.Println("[datalayer] found in leaves map, moving to next level")
+			lf = lf.leaves[pathElement]
+			continue
+		}
+
+		fmt.Println("[datalayer] not in leaves map, trying Dir.Find()...")
+		node, err := lf.Dir.Find(context.Background(), pathElement)
+		if err != nil {
+			fmt.Println("[datalayer] Dir.Find() failed:", err)
+			return nil, err
+		}
+
+		fmt.Println("[datalayer] Dir.Find() succeeded, checking if it's a directory...")
+		// Convert the node to a directory for the next level
+		nextDir, err := uio.NewDirectoryFromNode(db.DataLayer.DagServ, node)
+		if err != nil {
+			fmt.Println("[datalayer] error converting to directory:", err)
+			return nil, err
+		}
+
+		fmt.Println("[datalayer] successfully created directory for next level")
+		// Create a new LeafDir with this directory
+		lf = &LeafDir{
+			Dir:    nextDir,
+			leaves: make(map[string]*LeafDir),
 		}
 	}
 
+	fmt.Println("[datalayer] resolveWrkDir completed successfully")
 	return lf, nil
 }
 
