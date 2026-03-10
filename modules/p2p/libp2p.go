@@ -65,7 +65,13 @@ type WitnessGetter interface {
 	GetLastestWitnesses(...witnesses.SearchOption) ([]witnesses.Witness, error)
 }
 
-func New(witnessDb WitnessGetter, config P2PConfig, idConfig common.IdentityConfig, sconf systemconfig.SystemConfig, blockStatus common_types.BlockStatusGetter) *P2PServer {
+func New(
+	witnessDb WitnessGetter,
+	config P2PConfig,
+	idConfig common.IdentityConfig,
+	sconf systemconfig.SystemConfig,
+	blockStatus common_types.BlockStatusGetter,
+) *P2PServer {
 	return &P2PServer{
 		witnessDb:    witnessDb,
 		idConfig:     idConfig,
@@ -202,7 +208,7 @@ func (p2pServer *P2PServer) Init() error {
 	// If no public IPs are visible (e.g. running in Docker), force the node
 	// to behave as if it's behind NAT. This makes AutoRelay reserve slots on
 	// relay peers, allowing other nodes to reach us through circuit relay.
-	if !hasPublicIP() {
+	if !hasPublicIP() && !p2pServer.config.Get().ServerMode {
 		fmt.Println("[P2P] No public IP detected, forcing ReachabilityPrivate for relay reservations")
 		options = append(options, libp2p.ForceReachabilityPrivate())
 	}
@@ -232,7 +238,12 @@ func (p2pServer *P2PServer) Init() error {
 	}()
 
 	//Setup pubsub
-	ps, err := pubsub.NewGossipSub(ctx, p2p, pubsub.WithDiscovery(drouting.NewRoutingDiscovery(p2pServer.dht)), pubsub.WithPeerExchange(true))
+	ps, err := pubsub.NewGossipSub(
+		ctx,
+		p2p,
+		pubsub.WithDiscovery(drouting.NewRoutingDiscovery(p2pServer.dht)),
+		pubsub.WithPeerExchange(true),
+	)
 	if err != nil {
 		return err
 	}
@@ -428,7 +439,11 @@ func (p2pServer *P2PServer) SetStreamHandler(pid protocol.ID, handler network.St
 }
 
 // SetStreamHandlerMatch implements host.Host.
-func (p2pServer *P2PServer) SetStreamHandlerMatch(pid protocol.ID, matcher func(protocol.ID) bool, handler network.StreamHandler) {
+func (p2pServer *P2PServer) SetStreamHandlerMatch(
+	pid protocol.ID,
+	matcher func(protocol.ID) bool,
+	handler network.StreamHandler,
+) {
 	p2pServer.host.SetStreamHandlerMatch(pid, matcher, handler)
 }
 
@@ -527,7 +542,12 @@ func (p2p *P2PServer) connectRegisteredPeers() {
 				err := p2p.host.Connect(ctx, addrInfo[0])
 				cancel()
 				if err != nil {
-					fmt.Printf("connectRegisteredPeers: failed direct connect to %s (%s): %v\n", witness.PeerId, witness.Account, err)
+					fmt.Printf(
+						"connectRegisteredPeers: failed direct connect to %s (%s): %v\n",
+						witness.PeerId,
+						witness.Account,
+						err,
+					)
 				} else {
 					fmt.Printf("connectRegisteredPeers: connected to %s (%s)\n", witness.PeerId, witness.Account)
 					continue
@@ -542,7 +562,9 @@ func (p2p *P2PServer) connectRegisteredPeers() {
 			if relayPeerId == peerId.ID {
 				continue
 			}
-			relayAddr, err := multiaddr.NewMultiaddr("/p2p/" + relayPeerId.String() + "/p2p-circuit/p2p/" + witness.PeerId)
+			relayAddr, err := multiaddr.NewMultiaddr(
+				"/p2p/" + relayPeerId.String() + "/p2p-circuit/p2p/" + witness.PeerId,
+			)
 			if err != nil {
 				continue
 			}
@@ -554,13 +576,22 @@ func (p2p *P2PServer) connectRegisteredPeers() {
 			err = p2p.host.Connect(ctx, relayInfo)
 			cancel()
 			if err == nil {
-				fmt.Printf("connectRegisteredPeers: connected to %s (%s) via relay %s\n", witness.PeerId, witness.Account, relayPeerId.String())
+				fmt.Printf(
+					"connectRegisteredPeers: connected to %s (%s) via relay %s\n",
+					witness.PeerId,
+					witness.Account,
+					relayPeerId.String(),
+				)
 				relayConnected = true
 				break
 			}
 		}
 		if !relayConnected && len(connectedPeers) > 0 {
-			fmt.Printf("connectRegisteredPeers: all relay attempts failed for %s (%s)\n", witness.PeerId, witness.Account)
+			fmt.Printf(
+				"connectRegisteredPeers: all relay attempts failed for %s (%s)\n",
+				witness.PeerId,
+				witness.Account,
+			)
 		}
 	}
 }
