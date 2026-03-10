@@ -510,20 +510,18 @@ func (p2p *P2PServer) connectRegisteredPeers() {
 			continue
 		}
 
+		// Only collect direct (non-relay) addresses for background connection
+		// attempts. Circuit relay addresses are excluded here to avoid
+		// setting dial backoffs that would interfere with TSS and other
+		// time-sensitive protocols.
 		var selectedAddr []multiaddr.Multiaddr
-		//Select
 		for _, peer := range witness.PeerAddrs {
 			m, _ := multiaddr.NewMultiaddr(peer)
-
-			// fmt.Println("circuitAddress", circuitAddress, err)
 			if isCircuitAddr(m) {
-				selectedAddr = append(selectedAddr, m.Encapsulate(mp))
 				continue
 			}
-
 			if p2p.config.Get().AllowPrivate || IsPublicAddr(m) {
 				selectedAddr = append(selectedAddr, m.Encapsulate(mp))
-				continue
 			}
 		}
 
@@ -555,44 +553,11 @@ func (p2p *P2PServer) connectRegisteredPeers() {
 			}
 		}
 
-		// Fallback: try circuit relay through connected peers
-		connectedPeers := p2p.host.Network().Peers()
-		relayConnected := false
-		for _, relayPeerId := range connectedPeers {
-			if relayPeerId == peerId.ID {
-				continue
-			}
-			relayAddr, err := multiaddr.NewMultiaddr(
-				"/p2p/" + relayPeerId.String() + "/p2p-circuit/p2p/" + witness.PeerId,
-			)
-			if err != nil {
-				continue
-			}
-			relayInfo := peer.AddrInfo{
-				ID:    peerId.ID,
-				Addrs: []multiaddr.Multiaddr{relayAddr},
-			}
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			err = p2p.host.Connect(ctx, relayInfo)
-			cancel()
-			if err == nil {
-				fmt.Printf(
-					"connectRegisteredPeers: connected to %s (%s) via relay %s\n",
-					witness.PeerId,
-					witness.Account,
-					relayPeerId.String(),
-				)
-				relayConnected = true
-				break
-			}
-		}
-		if !relayConnected && len(connectedPeers) > 0 {
-			fmt.Printf(
-				"connectRegisteredPeers: all relay attempts failed for %s (%s)\n",
-				witness.PeerId,
-				witness.Account,
-			)
-		}
+		// Do NOT attempt circuit relay here. Failed relay dials set a
+		// per-address dial backoff in the swarm that can last minutes,
+		// which would prevent time-sensitive protocols (e.g. TSS) from
+		// connecting when they need it. Let AutoRelay and hole-punching
+		// handle relay connectivity organically.
 	}
 }
 
