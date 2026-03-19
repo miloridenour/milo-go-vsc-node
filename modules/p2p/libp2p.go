@@ -145,7 +145,7 @@ func (p2pServer *P2PServer) Init() error {
 		bootstrapPeers = append(bootstrapPeers, *peerId)
 	}
 	kadOptions := []kadDht.Option{
-		kadDht.ProtocolPrefix("/vsc.network"),
+		kadDht.ProtocolPrefix(protocol.ID("/vsc.network/" + p2pServer.systemConfig.NetId())),
 		kadDht.BootstrapPeers(bootstrapPeers...),
 	}
 
