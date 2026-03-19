@@ -65,7 +65,13 @@ type WitnessGetter interface {
 	GetLastestWitnesses(...witnesses.SearchOption) ([]witnesses.Witness, error)
 }
 
-func New(witnessDb WitnessGetter, config P2PConfig, idConfig common.IdentityConfig, sconf systemconfig.SystemConfig, blockStatus common_types.BlockStatusGetter) *P2PServer {
+func New(
+	witnessDb WitnessGetter,
+	config P2PConfig,
+	idConfig common.IdentityConfig,
+	sconf systemconfig.SystemConfig,
+	blockStatus common_types.BlockStatusGetter,
+) *P2PServer {
 	return &P2PServer{
 		witnessDb:    witnessDb,
 		idConfig:     idConfig,
@@ -220,7 +226,12 @@ func (p2pServer *P2PServer) Init() error {
 	}()
 
 	//Setup pubsub
-	ps, err := pubsub.NewGossipSub(ctx, p2p, pubsub.WithDiscovery(drouting.NewRoutingDiscovery(p2pServer.dht)), pubsub.WithPeerExchange(true))
+	ps, err := pubsub.NewGossipSub(
+		ctx,
+		p2p,
+		pubsub.WithDiscovery(drouting.NewRoutingDiscovery(p2pServer.dht)),
+		pubsub.WithPeerExchange(true),
+	)
 	if err != nil {
 		return err
 	}
@@ -270,22 +281,22 @@ func (p2ps *P2PServer) Start() *promise.Promise[any] {
 		time.Sleep(50 * time.Millisecond)
 		for {
 			peerList := ""
-			if len(p2ps.host.Network().Peers()) > 5 {
-				for idx, peer := range p2ps.host.Network().Peers() {
-					if idx >= 4 {
-						break
-					}
-					if idx > 0 {
-						peerList += " "
-					}
-					peerList += peer.String()
-				}
-				peerList += "..." + strconv.Itoa(len(p2ps.host.Network().Peers())-4) + " more"
-			} else {
-				for _, peer := range p2ps.host.Network().Peers() {
-					peerList += peer.String() + ", "
-				}
+			// if len(p2ps.host.Network().Peers()) > 5 {
+			// 	for idx, peer := range p2ps.host.Network().Peers() {
+			// 		if idx >= 4 {
+			// 			break
+			// 		}
+			// 		if idx > 0 {
+			// 			peerList += " "
+			// 		}
+			// 		peerList += peer.String()
+			// 	}
+			// 	peerList += "..." + strconv.Itoa(len(p2ps.host.Network().Peers())-4) + " more"
+			// } else {
+			for _, peer := range p2ps.host.Network().Peers() {
+				peerList += peer.String() + ", "
 			}
+			// }
 			peerLen := len(p2ps.host.Network().Peers())
 			fmt.Println("peers", "["+peerList+"]", "peers.len()="+strconv.Itoa(peerLen))
 			if peerLen >= len(uniquePeers)-1 {
@@ -415,7 +426,11 @@ func (p2pServer *P2PServer) SetStreamHandler(pid protocol.ID, handler network.St
 }
 
 // SetStreamHandlerMatch implements host.Host.
-func (p2pServer *P2PServer) SetStreamHandlerMatch(pid protocol.ID, matcher func(protocol.ID) bool, handler network.StreamHandler) {
+func (p2pServer *P2PServer) SetStreamHandlerMatch(
+	pid protocol.ID,
+	matcher func(protocol.ID) bool,
+	handler network.StreamHandler,
+) {
 	p2pServer.host.SetStreamHandlerMatch(pid, matcher, handler)
 }
 
