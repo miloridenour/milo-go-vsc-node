@@ -444,6 +444,8 @@ func (b *BlsCircuit) addRaw(DID BlsDID, sigBytes []byte) (bool, error) {
 	// verify the sig using the pub key and the CID bytes (message)
 	verified := bls.Verify(pubKey, b.msg.Bytes(), signature)
 	if !verified {
+		fmt.Printf("[bls] verify failed: did=%s pubKeyNil=%v msgLen=%d sigLen=%d msgCid=%s\n",
+			DID.String(), pubKey == nil, len(b.msg.Bytes()), len(sigBytes), b.msg.String())
 		return false, nil
 	}
 
